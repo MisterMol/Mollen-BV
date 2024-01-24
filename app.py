@@ -38,19 +38,19 @@ class CustomsArea(db.Model):
 
 
 def calculate_free_seats(taken_seats, total_seats=number_of_seats_in_waiting_area):
+    """
+    Functie die het aantal stoelen berekend die niet bezet zijn
+    """
     calculate_free_seats = total_seats - taken_seats
     return calculate_free_seats
 
 def calculate_total_people_in_waiting_area(taken_seats, total_seats=number_of_seats_in_waiting_area, multiplier=1.5):
-    # Calculate the percentage of taken seats
+    """
+    Functie om aantal totale personen in de ruimte te berkenen. er vanuitgaande dat niet elke persoon in de ruimte op een stoel zit. (Staan, leunen, lopen, zitten op de grond)
+    """
     percentage_taken = (taken_seats / total_seats) * 100
-
-    # Assuming each person occupies one seat, estimate the number of people
     estimated_people = int((percentage_taken / 100) * total_seats)
-
-    # Apply the multiplier to account for additional people that are not seated 
     estimated_people_with_multiplier = int(estimated_people * multiplier)
-
     return estimated_people_with_multiplier
 
 
@@ -73,17 +73,26 @@ def main_page():
 
 @app.route('/waiting_area', methods=['POST'])
 def receive_waiting_area_data():
+    """
+    Functie om binnenkomende data op "URL:/waiting_area" waar data naartoe gestuurd kan worden. Deze word dan verwerkt en als alles juist it verwerkt in de database
+    """
     data = request.json
     data['timestamp'] = datetime.fromisoformat(data['timestamp'])
     data['total_seats'] = number_of_seats_in_waiting_area
     data['free_seats'] = calculate_free_seats(data['taken_seats'])
+    data['total_people'] = calculate_total_people_in_waiting_area(data['taken_seats'])
     waiting_area_entry = WaitingArea(**data)
     db.session.add(waiting_area_entry)
     db.session.commit()
     return jsonify({'message': 'Waiting Area data received successfully'}), 201
 
+
+
 @app.route('/customs_area', methods=['POST'])
 def receive_customs_area_data():
+    """
+    Functie om binnenkomende data op "URL:/customs_area" waar data naartoe gestuurd kan worden. Deze word dan verwerkt en als alles juist it verwerkt in de database
+    """
     data = request.json
     data['timestamp'] = datetime.fromisoformat(data['timestamp'])
     customs_area_entry = CustomsArea(**data)
@@ -93,6 +102,9 @@ def receive_customs_area_data():
 
 
 def get_waiting_area_data():
+    """
+    Functie die de data uit de database haalt voor de "Waiting Area" en weergeeft in een grafiek op de webapplicatie
+    """
     waiting_area_data = WaitingArea.query.all()
     data = {
         'labels': [entry.timestamp.strftime('%Y-%m-%d %H:%M:%S') for entry in waiting_area_data],
@@ -123,6 +135,9 @@ def get_waiting_area_data():
     return data
 
 def get_customs_area_data():
+    """
+    Functie die de data uit de database haalt voor de Customs Area" en weergeeft in een grafiek op de webapplicatie
+    """
     customs_area_data = CustomsArea.query.all()
     data = {
         'labels': [entry.timestamp.strftime('%Y-%m-%d %H:%M:%S') for entry in customs_area_data],
